@@ -1,0 +1,29 @@
+# Frontend UI/UX
+
+This folder contains the polished dark fintech UI for AI Budget Tracker.
+
+## Files
+
+- `index.html` - main frontend page
+- `styles.css` - premium dark dashboard styling
+- `app.js` - API, WebSocket, chart, authentication, transaction, budget and AI logic
+- `assets/ui-reference.png` - UI mockup reference image
+
+## Run
+
+Start the backend first:
+
+```bash
+cd Backend
+npm install
+npm start
+```
+
+Then open `Frontend/index.html` with Live Server in VS Code.
+
+The frontend expects the backend at:
+
+```text
+http://localhost:5000/api
+ws://localhost:5000
+```

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Budget Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">AI</div>
+                <div>
+                    <h1>AI Budget Tracker</h1>
+                    <p>Smart finance workspace</p>
+                </div>
+            </div>
+
+            <nav class="nav-list">
+                <button class="nav-item active" data-section="dashboard"><span>▣</span>Dashboard</button>
+                <button class="nav-item" data-section="transactions"><span>⇄</span>Transactions</button>
+                <button class="nav-item" data-section="budget"><span>◔</span>Budget</button>
+                <button class="nav-item" data-section="ai"><span>✦</span>AI Suggestions</button>
+                <button class="nav-item admin-only hidden" data-section="admin"><span>⌘</span>Admin</button>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <button class="side-link" type="button"><span>⚙</span>Settings</button>
+                <div class="connection-card">
+                    <span id="socketStatus" class="status-dot"></span>
+                    <div>
+                        <strong>Real-time status</strong>
+                        <p id="socketText">Not connected</p>
+                    </div>
+                </div>
+                <div class="premium-card">
+                    <div>
+                        <strong>AI Insights</strong>
+                        <p>Live alerts, smart forecasts and saving tips.</p>
+                    </div>
+                    <span>✦</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">Personal finance workspace</p>
+                    <h2 id="pageTitle">Dashboard</h2>
+                </div>
+                <div class="topbar-actions">
+                    <div class="date-chip">May 2025</div>
+                    <div class="notification-dot">🔔</div>
+                    <div class="user-area">
+                        <span id="userBadge" class="user-badge hidden"></span>
+                        <button id="logoutBtn" class="ghost-btn hidden">Logout</button>
+                    </div>
+                </div>
+            </header>
+
+            <section id="authView" class="auth-grid">
+                <div class="auth-copy">
+                    <span class="pill">AI + WebSockets + Budget Analytics</span>
+                    <h2>Track money, detect overspending, and get saving advice.</h2>
+                    <p>This frontend connects to the existing Node.js backend and shows authentication, transactions, monthly budget, real-time alerts, dashboard statistics, and AI suggestions.</p>
+                    <div class="feature-grid">
+                        <div><span>01</span>Secure login</div>
+                        <div><span>02</span>Live alerts</div>
+                        <div><span>03</span>Charts</div>
+                        <div><span>04</span>AI advice</div>
+                    </div>
+                </div>
+
+                <div class="auth-card">
+                    <div class="tabs">
+                        <button id="showLogin" class="tab-btn active">Login</button>
+                        <button id="showRegister" class="tab-btn">Register</button>
+                    </div>
+
+                    <form id="loginForm" class="form-stack">
+                        <label>Email<input id="loginEmail" type="email" required placeholder="you@example.com"></label>
+                        <label>Password<input id="loginPassword" type="password" required placeholder="••••••••"></label>
+                        <button class="primary-btn" type="submit">Login</button>
+                    </form>
+
+                    <form id="registerForm" class="form-stack hidden">
+                        <label>Username<input id="registerUsername" type="text" required placeholder="Martin"></label>
+                        <label>Email<input id="registerEmail" type="email" required placeholder="you@example.com"></label>
+                        <label>Password<input id="registerPassword" type="password" required minlength="6" placeholder="Minimum 6 characters"></label>
+                        <button class="primary-btn" type="submit">Create account</button>
+                    </form>
+                </div>
+            </section>
+
+            <section id="appView" class="hidden">
+                <section id="dashboardSection" class="content-section active-section">
+                    <div class="stats-grid">
+                        <article class="stat-card income-card"><div class="stat-icon">💳</div><span>Total income</span><strong id="totalIncome">0 BGN</strong><small>Updated from your transactions</small></article>
+                        <article class="stat-card expense-card"><div class="stat-icon">↘</div><span>Total expenses</span><strong id="totalExpenses">0 BGN</strong><small>Monthly outgoing money</small></article>
+                        <article class="stat-card balance-card"><div class="stat-icon">👛</div><span>Balance</span><strong id="balance">0 BGN</strong><small>Income minus expenses</small></article>
+                        <article class="stat-card budget-summary-card"><div class="stat-icon">🎯</div><span>Biggest category</span><strong id="biggestCategory">None</strong><small>Main spending area</small></article>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <article class="panel chart-panel">
+                            <div class="panel-header">
+                                <div>
+                                    <h3>Spending overview</h3>
+                                    <p id="chartHint">Monthly category distribution</p>
+                                </div>
+                                <span class="panel-badge">Expenses</span>
+                            </div>
+                            <canvas id="categoryChart"></canvas>
+                        </article>
+
+                        <article class="panel">
+                            <div class="panel-header">
+                                <div>
+                                    <h3>Recent transactions</h3>
+                                    <p>Latest income and expenses</p>
+                                </div>
+                                <button id="refreshDashboardBtn" class="ghost-btn">Refresh</button>
+                            </div>
+                            <div id="recentTransactions" class="transaction-list empty-state">No recent transactions yet.</div>
+                        </article>
+                    </div>
+                </section>
+
+                <section id="transactionsSection" class="content-section">
+                    <div class="layout-grid">
+                        <article class="panel">
+                            <div class="panel-header"><h3>Add transaction</h3></div>
+                            <form id="transactionForm" class="form-stack">
+                                <label>Type
+                                    <select id="transactionType" required>
+                                        <option value="income">Income</option>
+                                        <option value="expense">Expense</option>
+                                    </select>
+                                </label>
+                                <label>Amount<input id="transactionAmount" type="number" min="0.01" step="0.01" required placeholder="120.00"></label>
+                                <label>Category<input id="transactionCategory" type="text" required placeholder="Food, Transport, Salary"></label>
+                                <label>Description<input id="transactionDescription" type="text" placeholder="Optional note"></label>
+                                <label>Date<input id="transactionDate" type="date" required></label>
+                                <button class="primary-btn" type="submit">Save transaction</button>
+                            </form>
+                        </article>
+
+                        <article class="panel wide-panel">
+                            <div class="panel-header"><h3>Transaction history</h3></div>
+                            <div class="filters">
+                                <input id="filterCategory" type="text" placeholder="Filter category">
+                                <select id="filterType">
+                                    <option value="">All types</option>
+                                    <option value="income">Income</option>
+                                    <option value="expense">Expense</option>
+                                </select>
+                                <select id="sortBy">
+                                    <option value="date">Sort by date</option>
+                                    <option value="amount">Sort by amount</option>
+                                </select>
+                                <select id="sortOrder">
+                                    <option value="desc">Descending</option>
+                                    <option value="asc">Ascending</option>
+                                </select>
+                                <button id="applyFiltersBtn" class="ghost-btn">Apply</button>
+                            </div>
+                            <div id="transactionsList" class="transaction-list empty-state">No transactions found.</div>
+                        </article>
+                    </div>
+                </section>
+
+                <section id="budgetSection" class="content-section">
+                    <div class="layout-grid compact">
+                        <article class="panel">
+                            <div class="panel-header"><h3>Monthly budget</h3></div>
+                            <form id="budgetForm" class="form-stack">
+                                <label>Budget limit<input id="budgetLimit" type="number" min="1" step="1" required placeholder="1000"></label>
+                                <button class="primary-btn" type="submit">Save budget</button>
+                            </form>
+                        </article>
+
+                        <article class="panel budget-card">
+                            <div class="panel-header"><h3>Budget status</h3><span id="budgetMonth" class="panel-badge">Current month</span></div>
+                            <div class="budget-meter"><div id="budgetProgress"></div></div>
+                            <div class="budget-numbers">
+                                <div><span>Limit</span><strong id="budgetLimitText">0 BGN</strong></div>
+                                <div><span>Spent</span><strong id="budgetSpentText">0 BGN</strong></div>
+                                <div><span>Remaining</span><strong id="budgetRemainingText">0 BGN</strong></div>
+                                <div><span>Used</span><strong id="budgetPercentageText">0%</strong></div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section id="aiSection" class="content-section">
+                    <article class="panel ai-panel">
+                        <div class="panel-header">
+                            <div>
+                                <h3>AI saving suggestions</h3>
+                                <p>The backend analyzes expense categories and creates practical saving tips.</p>
+                            </div>
+                            <button id="generateSuggestionsBtn" class="primary-btn">Generate suggestions</button>
+                        </div>
+                        <div id="suggestionsList" class="suggestions-grid empty-state">No AI suggestions yet.</div>
+                    </article>
+                </section>
+
+                <section id="adminSection" class="content-section">
+                    <article class="panel">
+                        <div class="panel-header"><h3>Admin statistics</h3></div>
+                        <div class="stats-grid admin-stats">
+                            <article class="stat-card"><span>Total users</span><strong id="adminUsers">0</strong></article>
+                            <article class="stat-card"><span>Total transactions</span><strong id="adminTransactions">0</strong></article>
+                            <article class="stat-card"><span>Total suggestions</span><strong id="adminSuggestions">0</strong></article>
+                            <article class="stat-card"><span>Most used category</span><strong id="adminCategory">None</strong></article>
+                        </div>
+                    </article>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <template id="transactionTemplate">
+        <div class="transaction-item">
+            <div class="transaction-main">
+                <div class="transaction-icon">•</div>
+                <div>
+                    <strong class="transaction-title"></strong>
+                    <p class="transaction-meta"></p>
+                </div>
+            </div>
+            <div class="transaction-actions">
+                <span class="transaction-amount"></span>
+                <button class="delete-btn">Delete</button>
+            </div>
+        </div>
+    </template>
+
+    <script src="app.js"></script>
+</body>
+</html>
