@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
-const WebSocket = require("ws");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
@@ -16,52 +15,16 @@ const SuggestionRepository = require("./repositories/SuggestionRepository");
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
 
 const PORT = 5000;
-const JWT_SECRET = "budget_tracker_secret_key";
 
 app.use(cors());
 app.use(express.json());
 
-const connectedUsers = new Map();
-
-wss.on("connection", (socket) => {
-    socket.on("message", (message) => {
-        try {
-            const data = JSON.parse(message);
-
-            if (data.type === "connect_user" && data.userId) {
-                connectedUsers.set(data.userId, socket);
-
-                socket.send(JSON.stringify({
-                    type: "connection_success",
-                    message: "WebSocket connected successfully."
-                }));
-            }
-        } catch {
-            socket.send(JSON.stringify({
-                type: "error",
-                message: "Invalid WebSocket message."
-            }));
-        }
-    });
-
-    socket.on("close", () => {
-        for (const [userId, userSocket] of connectedUsers.entries()) {
-            if (userSocket === socket) {
-                connectedUsers.delete(userId);
-            }
-        }
-    });
-});
+setupWebSocketServer(server);
 
 function sendRealTimeMessage(userId, payload) {
-    const socket = connectedUsers.get(userId);
-
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify(payload));
-    }
+    return realtimeService.sendToUser(userId, payload);
 }
 
 function authMiddleware(req, res, next) {
@@ -244,6 +207,16 @@ app.post("/api/transactions", authMiddleware, (req, res) => {
                 data: warning
             });
         }
+
+        const unusualSpending = detectUnusualSpending(
+            req.user.id,
+            newTransaction,
+            transactions
+        );
+
+        if (unusualSpending) {
+            sendRealTimeMessage(req.user.id, unusualSpending);
+        }
     }
 
     sendRealTimeMessage(req.user.id, {
@@ -376,9 +349,9 @@ app.post("/api/ai/suggestions", authMiddleware, (req, res) => {
         suggestions
     });
 
+app.get("/", (req, res) => {
     res.json({
-        message: "AI suggestions generated successfully.",
-        suggestions
+        message: "AI Budget Tracker Backend is running."
     });
 });
 
@@ -386,6 +359,12 @@ app.get("/api/ai/suggestions", authMiddleware, (req, res) => {
     const suggestions = SuggestionRepository.getSuggestionsByUser(req.user.id);
 
     res.json(suggestions);
+});
+
+app.get("/api/ai/realtime-status", authMiddleware, (req, res) => {
+    res.json({
+        onlineUsers: realtimeService.getOnlineUsersCount()
+    });
 });
 
 app.get("/api/admin/stats", authMiddleware, adminMiddleware, (req, res) => {
