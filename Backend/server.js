@@ -13,11 +13,19 @@ const { setupWebSocketServer } = require("./realtime/websocketServer");
 const realtimeService = require("./services/realtimeService");
 const { detectUnusualSpending } = require("./services/spendingAnalysis");
 
+const authRoutes = require("./routes/authRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
+const budgetRoutes = require("./routes/budgetRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
+const aiRoutes = require("./routes/aiRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+
+const { setupWebSocket } = require("./websocket/socketManager");
+
 const app = express();
 const server = http.createServer(app);
 
 const PORT = 5000;
-const JWT_SECRET = "budget_tracker_secret_key";
 
 app.use(cors());
 app.use(express.json());
@@ -390,9 +398,9 @@ app.post("/api/ai/suggestions", authMiddleware, (req, res) => {
         suggestions
     });
 
+app.get("/", (req, res) => {
     res.json({
-        message: "AI suggestions generated successfully.",
-        suggestions
+        message: "AI Budget Tracker Backend is running."
     });
 });
 
